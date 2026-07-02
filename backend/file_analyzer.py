@@ -149,6 +149,105 @@ def analyze_folder(folder_path):
         'recommendations': recommendations
     }
 
+def analyze_uploaded_files(file_paths):
+    """Analyze uploaded files and return comprehensive results"""
+    # Initialize data structures
+    all_files = []
+    file_hashes = defaultdict(list)
+    categories = defaultdict(int)
+    large_files = []
+    junk_files = []
+    total_size = 0
+    
+    # Process each uploaded file
+    for filepath in file_paths:
+        if not os.path.exists(filepath):
+            continue
+            
+        try:
+            filename = os.path.basename(filepath)
+            file_size = os.path.getsize(filepath)
+            total_size += file_size
+            
+            # Categorize file
+            category = get_file_category(filename)
+            categories[category] += 1
+            
+            file_info = {
+                'path': filename,  # Only show filename, not full path
+                'name': filename,
+                'size': file_size,
+                'category': category
+            }
+            
+            all_files.append(file_info)
+            
+            # Check for large files (>100MB)
+            if file_size > 100 * 1024 * 1024:  # 100MB
+                large_files.append(file_info)
+            
+            # Check for junk files
+            if is_junk_file(filename):
+                junk_files.append(file_info)
+            
+            # Calculate hash for duplicate detection (skip very large files)
+            if file_size < 500 * 1024 * 1024:  # Skip files >500MB for hashing
+                file_hash = calculate_file_hash(filepath)
+                if file_hash:
+                    file_hashes[file_hash].append(file_info)
+                    
+        except (OSError, PermissionError):
+            continue
+    
+    # Find duplicates
+    duplicates = []
+    duplicate_size = 0
+    for hash_val, files_list in file_hashes.items():
+        if len(files_list) > 1:
+            # Calculate wasted space (all but one copy)
+            wasted_space = sum(f['size'] for f in files_list[1:])
+            duplicate_size += wasted_space
+            duplicates.append({
+                'hash': hash_val[:16],  # Show first 16 chars
+                'files': files_list,
+                'size': files_list[0]['size'],
+                'count': len(files_list)
+            })
+    
+    # Calculate junk size
+    junk_size = sum(f['size'] for f in junk_files)
+    
+    # Build summary
+    summary = {
+        'totalFiles': len(all_files),
+        'totalSize': total_size,
+        'duplicateCount': sum(d['count'] - 1 for d in duplicates),
+        'duplicateSize': duplicate_size,
+        'largeFileCount': len(large_files),
+        'junkFileCount': len(junk_files),
+        'junkSize': junk_size,
+        'categories': dict(categories)
+    }
+    
+    # Build scan data object
+    scan_data = {
+        'summary': summary,
+        'duplicates': duplicates,
+        'largeFiles': large_files,
+        'junkFiles': junk_files
+    }
+    
+    # Generate AI-like recommendations
+    recommendations = generate_recommendations(scan_data)
+    
+    return {
+        'summary': summary,
+        'duplicates': duplicates,
+        'largeFiles': large_files,
+        'junkFiles': junk_files,
+        'recommendations': recommendations
+    }
+
 def generate_recommendations(scan_data):
     """Generate AI-like recommendations based on scan data"""
     recommendations = []

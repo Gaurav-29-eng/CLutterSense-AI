@@ -1,9 +1,18 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from file_analyzer import analyze_folder
+from werkzeug.utils import secure_filename
+import os
+from file_analyzer import analyze_uploaded_files
 
 app = Flask(__name__)
 CORS(app)
+
+# Configure upload folder
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max upload size
 
 @app.route('/')
 def home():
@@ -28,15 +37,37 @@ def get_ai_recommendations(data):
     return recommendations
 
 @app.route('/api/scan', methods=['POST'])
-def scan_folder():
+def scan_files():
     try:
-        data = request.json
-        folder_path = data.get('folderPath')
+        # Check if files are present in the request
+        if 'files' not in request.files:
+            return jsonify({'error': 'No files provided'}), 400
         
-        if not folder_path:
-            return jsonify({'error': 'Folder path is required'}), 400
+        files = request.files.getlist('files')
         
-        results = analyze_folder(folder_path)
+        if not files or files[0].filename == '':
+            return jsonify({'error': 'No files selected'}), 400
+        
+        # Save uploaded files and analyze them
+        uploaded_file_paths = []
+        for file in files:
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                uploaded_file_paths.append(filepath)
+        
+        # Analyze the uploaded files
+        results = analyze_uploaded_files(uploaded_file_paths)
+        
+        # Clean up uploaded files after analysis
+        for filepath in uploaded_file_paths:
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            except:
+                pass
+        
         return jsonify(results)
     
     except Exception as e:
