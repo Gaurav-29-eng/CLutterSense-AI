@@ -1,9 +1,0 @@
-backend/
-backend/**
-venv/
-venv/**
-*.py
-*.pyc
-requirements.txt
-.env
-.env.example
