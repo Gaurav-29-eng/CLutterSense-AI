@@ -24,11 +24,11 @@ export default function Dashboard({ scanResults, onGoHome }) {
     try {
       const payload = { scanResults }
       console.log('Recommendations API Request:', {
-        url: 'http://127.0.0.1:5000/api/recommendations',
+        url: 'https://cluttersense-ai.onrender.com/api/recommendations',
         method: 'POST',
         body: payload
       })
-      const response = await axios.post('http://127.0.0.1:5000/api/recommendations', payload)
+      const response = await axios.post('https://cluttersense-ai.onrender.com/api/recommendations', payload)
       console.log('Recommendations API Response:', response.data)
       setAiRecommendations(response.data.recommendations)
     } catch (error) {

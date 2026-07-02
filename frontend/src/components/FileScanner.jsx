@@ -20,11 +20,11 @@ export default function FileScanner({ onScanComplete }) {
     try {
       const payload = { folderPath }
       console.log('API Request:', {
-        url: 'http://127.0.0.1:5000/api/scan',
+        url: 'https://cluttersense-ai.onrender.com/api/scan',
         method: 'POST',
         body: payload
       })
-      const response = await axios.post('http://127.0.0.1:5000/api/scan', payload)
+      const response = await axios.post('https://cluttersense-ai.onrender.com/api/scan', payload)
       console.log('API Response:', response.data)
       onScanComplete(response.data)
     } catch (err) {
