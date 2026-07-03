@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Upload, Search, Loader2, FileText, X } from 'lucide-react'
 import axios from 'axios'
@@ -8,12 +8,17 @@ export default function FileScanner({ onScanComplete }) {
   const [isScanning, setIsScanning] = useState(false)
   const [error, setError] = useState('')
   const [isDragging, setIsDragging] = useState(false)
+  const folderInputRef = useRef(null)
 
-  const handleFileSelect = (e) => {
+  const handleFolderSelect = (e) => {
     const files = Array.from(e.target.files)
     console.log('Selected files:', files.length, files)
     setSelectedFiles(prev => [...prev, ...files])
     setError('')
+  }
+
+  const handleBrowseClick = () => {
+    folderInputRef.current?.click()
   }
 
   const traverseFileTree = async (item, path = '') => {
@@ -176,21 +181,20 @@ export default function FileScanner({ onScanComplete }) {
               <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
               <p className="text-gray-300 mb-2">
                 Drag and drop folders here, or{' '}
-                <label htmlFor="fileInput" className="text-primary-400 hover:text-primary-300 cursor-pointer underline">
+                <button onClick={handleBrowseClick} className="text-primary-400 hover:text-primary-300 cursor-pointer underline bg-transparent border-none p-0">
                   browse
-                </label>
+                </button>
               </p>
               <p className="text-sm text-gray-500">
                 Supports folder upload with all files inside (Max 500MB per file)
               </p>
               <input
+                ref={folderInputRef}
                 type="file"
-                id="fileInput"
-                webkitdirectory
-                directory
                 multiple
-                onChange={handleFileSelect}
-                className="hidden"
+                onChange={handleFolderSelect}
+                style={{ display: "none" }}
+                {...{ webkitdirectory: "", directory: "" }}
               />
             </div>
           </motion.div>
